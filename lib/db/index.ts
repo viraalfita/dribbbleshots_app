@@ -2,5 +2,21 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './schema';
 
-const sqlite = new Database('data/elux-shots.db');
-export const db = drizzle(sqlite, { schema });
+type DrizzleDB = ReturnType<typeof drizzle<typeof schema>>;
+
+let instance: DrizzleDB | undefined;
+
+function getInstance(): DrizzleDB {
+    if (!instance) {
+        const dbPath = process.env.DATABASE_PATH ?? 'data/elux-shots.db';
+        const sqlite = new Database(dbPath);
+        instance = drizzle(sqlite, { schema });
+    }
+    return instance;
+}
+
+export const db = new Proxy({} as DrizzleDB, {
+    get(_, prop: string | symbol) {
+        return getInstance()[prop as keyof DrizzleDB];
+    },
+});

@@ -1,0 +1,15 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL}
+      SECRET_COOKIE_PASSWORD: ${SECRET_COOKIE_PASSWORD}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    restart: unless-stopped

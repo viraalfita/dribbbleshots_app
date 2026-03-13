@@ -1,6 +1,4 @@
 {
-  "id": "ba8e3b17-26d1-46aa-9c8f-f09922e63506",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -28,7 +26,8 @@
         },
         "decision": {
           "name": "decision",
-          "type": "text",
+          "type": "review_decision",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -40,7 +39,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -58,7 +57,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "admin_reviews_reviewer_id_users_id_fk": {
@@ -71,7 +70,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -129,7 +128,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -147,7 +146,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -187,7 +186,8 @@
         },
         "type": {
           "name": "type",
-          "type": "text",
+          "type": "notification_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -200,7 +200,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -218,7 +218,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "notifications_plan_id_shot_plans_id_fk": {
@@ -231,7 +231,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -290,7 +290,8 @@
         },
         "product_type": {
           "name": "product_type",
-          "type": "text",
+          "type": "product_type",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -332,21 +333,22 @@
         },
         "status": {
           "name": "status",
-          "type": "text",
+          "type": "plan_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'draft'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -364,7 +366,20 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shot_plans_parent_plan_id_shot_plans_id_fk": {
+          "name": "shot_plans_parent_plan_id_shot_plans_id_fk",
+          "tableFrom": "shot_plans",
+          "tableTo": "shot_plans",
+          "columnsFrom": [
+            "parent_plan_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "shot_plans_general_theme_id_theme_library_id_fk": {
@@ -377,7 +392,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -495,14 +510,15 @@
         },
         "role": {
           "name": "role",
-          "type": "text",
+          "type": "user_role",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
           "default": "'designer'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -525,15 +541,63 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.notification_type": {
+      "name": "notification_type",
+      "schema": "public",
+      "values": [
+        "approved",
+        "rejected",
+        "info"
+      ]
+    },
+    "public.plan_status": {
+      "name": "plan_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "submitted",
+        "under_review",
+        "approved",
+        "rejected"
+      ]
+    },
+    "public.product_type": {
+      "name": "product_type",
+      "schema": "public",
+      "values": [
+        "website",
+        "mobile",
+        "dashboard"
+      ]
+    },
+    "public.review_decision": {
+      "name": "review_decision",
+      "schema": "public",
+      "values": [
+        "approved",
+        "rejected"
+      ]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "designer",
+        "admin"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
-  }
+    "tables": {},
+    "columns": {}
+  },
+  "id": "26a15990-cddd-419e-a1c2-b28a02044022",
+  "prevId": "1b8c53aa-73eb-4636-9edc-5c742f97f6fe"
 }

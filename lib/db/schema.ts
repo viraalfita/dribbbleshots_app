@@ -1,54 +1,104 @@
-import { sqliteTable, integer, text, real } from 'drizzle-orm/sqlite-core';
-import { sql } from 'drizzle-orm';
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  real,
+  serial,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
-export const users = sqliteTable('users', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  role: text('role', { enum: ['designer', 'admin'] }).notNull().default('designer'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+export const userRoleEnum = pgEnum("user_role", ["designer", "admin"]);
+export const productTypeEnum = pgEnum("product_type", [
+  "website",
+  "mobile",
+  "dashboard",
+]);
+export const planStatusEnum = pgEnum("plan_status", [
+  "draft",
+  "submitted",
+  "under_review",
+  "approved",
+  "rejected",
+]);
+export const reviewDecisionEnum = pgEnum("review_decision", [
+  "approved",
+  "rejected",
+]);
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "approved",
+  "rejected",
+  "info",
+]);
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  role: userRoleEnum("role").notNull().default("designer"),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .notNull()
+    .defaultNow(),
 });
 
-export const themeLibrary = sqliteTable('theme_library', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  macroTheme: text('macro_theme').notNull(),
-  nicheName: text('niche_name').notNull(),
-  countryFit: text('country_fit', { mode: 'json' }).notNull().$type<string[]>(),
-  buyerFit: text('buyer_fit', { mode: 'json' }).notNull().$type<string[]>(),
-  visualPotential: integer('visual_potential').notNull().default(70),
-  authorityScore: integer('authority_score').notNull().default(70),
-  businessRelevance: integer('business_relevance').notNull().default(70),
-  discoveryScore: integer('discovery_score').notNull().default(70),
-  genericPenalty: integer('generic_penalty').notNull().default(0),
-  notes: text('notes'),
+export const themeLibrary = pgTable("theme_library", {
+  id: serial("id").primaryKey(),
+  macroTheme: text("macro_theme").notNull(),
+  nicheName: text("niche_name").notNull(),
+  countryFit: jsonb("country_fit").$type<string[]>().notNull(),
+  buyerFit: jsonb("buyer_fit").$type<string[]>().notNull(),
+  visualPotential: integer("visual_potential").notNull().default(70),
+  authorityScore: integer("authority_score").notNull().default(70),
+  businessRelevance: integer("business_relevance").notNull().default(70),
+  discoveryScore: integer("discovery_score").notNull().default(70),
+  genericPenalty: integer("generic_penalty").notNull().default(0),
+  notes: text("notes"),
 });
 
-export const shotPlans = sqliteTable('shot_plans', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  designerId: integer('designer_id').notNull().references(() => users.id),
-  parentPlanId: integer('parent_plan_id'),
-  revisionNumber: integer('revision_number').notNull().default(1),
-  generalThemeId: integer('general_theme_id').notNull().references(() => themeLibrary.id),
-  specificTheme: text('specific_theme').notNull(),
-  title: text('title').notNull(),
-  productType: text('product_type', { enum: ['website', 'mobile', 'dashboard'] }).notNull(),
-  targetMarket: text('target_market').notNull(),
-  appExplanation: text('app_explanation').notNull(),
-  sectionsJson: text('sections_json', { mode: 'json' }).$type<{ name: string; description: string }[]>(),
-  screensJson: text('screens_json', { mode: 'json' }).$type<{ name: string; description: string }[]>(),
-  pagesJson: text('pages_json', { mode: 'json' }).$type<{ name: string; flow: string }[]>(),
-  refLinksJson: text('ref_links_json', { mode: 'json' }).$type<string[]>(),
-  status: text('status', { enum: ['draft', 'submitted', 'under_review', 'approved', 'rejected'] }).notNull().default('draft'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+export const shotPlans = pgTable("shot_plans", {
+  id: serial("id").primaryKey(),
+  designerId: integer("designer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  parentPlanId: integer("parent_plan_id").references(
+    (): AnyPgColumn => shotPlans.id,
+    { onDelete: "set null" },
+  ),
+  revisionNumber: integer("revision_number").notNull().default(1),
+  generalThemeId: integer("general_theme_id")
+    .notNull()
+    .references(() => themeLibrary.id, { onDelete: "restrict" }),
+  specificTheme: text("specific_theme").notNull(),
+  title: text("title").notNull(),
+  productType: productTypeEnum("product_type").notNull(),
+  targetMarket: text("target_market").notNull(),
+  appExplanation: text("app_explanation").notNull(),
+  sectionsJson:
+    jsonb("sections_json").$type<{ name: string; description: string }[]>(),
+  screensJson:
+    jsonb("screens_json").$type<{ name: string; description: string }[]>(),
+  pagesJson: jsonb("pages_json").$type<{ name: string; flow: string }[]>(),
+  refLinksJson: jsonb("ref_links_json").$type<string[]>(),
+  status: planStatusEnum("status").notNull().default("draft"),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" })
+    .notNull()
+    .defaultNow(),
 });
 
-export const aiEvaluations = sqliteTable('ai_evaluations', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  planId: integer('plan_id').notNull().references(() => shotPlans.id),
-  score: real('score').notNull(),
-  label: text('label').notNull(),
-  scoreBreakdownJson: text('score_breakdown_json', { mode: 'json' }).notNull().$type<{
+export const aiEvaluations = pgTable("ai_evaluations", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id")
+    .notNull()
+    .references(() => shotPlans.id, { onDelete: "cascade" }),
+  score: real("score").notNull(),
+  label: text("label").notNull(),
+  scoreBreakdownJson: jsonb("score_breakdown_json").notNull().$type<{
     region_timing_fit: number;
     buyer_fit: number;
     authority_fit: number;
@@ -57,23 +107,29 @@ export const aiEvaluations = sqliteTable('ai_evaluations', {
     discovery_potential: number;
     generic_penalty: number;
   }>(),
-  fieldFeedbackJson: text('field_feedback_json', { mode: 'json' }).notNull().$type<{
+  fieldFeedbackJson: jsonb("field_feedback_json").notNull().$type<{
     specific_theme: string;
     title: string;
     target_market: string;
     sections_or_screens: string;
     app_explanation: string;
   }>(),
-  overallVerdict: text('overall_verdict').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+  overallVerdict: text("overall_verdict").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .notNull()
+    .defaultNow(),
 });
 
-export const adminReviews = sqliteTable('admin_reviews', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  planId: integer('plan_id').notNull().references(() => shotPlans.id),
-  reviewerId: integer('reviewer_id').notNull().references(() => users.id),
-  decision: text('decision', { enum: ['approved', 'rejected'] }).notNull(),
-  fieldNotesJson: text('field_notes_json', { mode: 'json' }).notNull().$type<{
+export const adminReviews = pgTable("admin_reviews", {
+  id: serial("id").primaryKey(),
+  planId: integer("plan_id")
+    .notNull()
+    .references(() => shotPlans.id, { onDelete: "cascade" }),
+  reviewerId: integer("reviewer_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  decision: reviewDecisionEnum("decision").notNull(),
+  fieldNotesJson: jsonb("field_notes_json").notNull().$type<{
     specific_theme?: string;
     title?: string;
     target_market?: string;
@@ -82,15 +138,23 @@ export const adminReviews = sqliteTable('admin_reviews', {
     app_explanation?: string;
     ref_links?: string;
   }>(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .notNull()
+    .defaultNow(),
 });
 
-export const notifications = sqliteTable('notifications', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  userId: integer('user_id').notNull().references(() => users.id),
-  planId: integer('plan_id').references(() => shotPlans.id),
-  message: text('message').notNull(),
-  type: text('type', { enum: ['approved', 'rejected', 'info'] }).notNull(),
-  isRead: integer('is_read', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`(strftime('%s', 'now'))`),
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  planId: integer("plan_id").references(() => shotPlans.id, {
+    onDelete: "set null",
+  }),
+  message: text("message").notNull(),
+  type: notificationTypeEnum("type").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
+    .notNull()
+    .defaultNow(),
 });

@@ -21,6 +21,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const path = req.nextUrl.pathname;
   const isPublicRoute = path === '/login' || path.startsWith('/api/auth');
+  const hasBearerToken = req.headers.get('Authorization')?.startsWith('Bearer ');
 
   const accessToken = req.cookies.get('sb-access-token')?.value;
   const role = req.cookies.get('dribble-role')?.value;
@@ -31,7 +32,7 @@ export async function middleware(req: NextRequest) {
     isLoggedIn = !!payload?.exp && payload.exp > Date.now() / 1000;
   }
 
-  if (!isLoggedIn && !isPublicRoute) {
+  if (!isLoggedIn && !isPublicRoute && !hasBearerToken) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 

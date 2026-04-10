@@ -6,19 +6,18 @@ import NotificationBanner from '@/components/NotificationBanner';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Plus, ChevronRight, LayoutTemplate } from 'lucide-react';
 import { LogoutButton } from '@/components/LogoutButton';
-import { cn } from '@/lib/utils'; // Make sure lib/utils.ts is true
+import { cn } from '@/lib/utils';
 
 type Plan = {
     id: number;
     title: string;
-    specificTheme: string;
+    specific_theme: string;
     status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected';
-    createdAt: string;
+    created_at: string;
     aiScore: number | null;
     aiLabel: string | null;
 };
 
-// Quick LabelBadge for designer view
 function LabelBadge({ label }: { label: string | null }) {
     if (!label) return <span className="text-xs text-slate-500 italic">Pending</span>;
 
@@ -44,9 +43,7 @@ export default function PlansPage() {
         fetch('/api/plans')
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    setPlans(data.plans);
-                }
+                if (data.success) setPlans(data.plans);
                 setLoading(false);
             });
     }, []);
@@ -108,7 +105,7 @@ export default function PlansPage() {
                                             </h3>
                                             <StatusBadge status={plan.status} />
                                         </div>
-                                        <p className="text-sm text-slate-400">{plan.specificTheme}</p>
+                                        <p className="text-sm text-slate-400">{plan.specific_theme}</p>
                                     </div>
                                     <div className="flex items-center gap-6">
                                         {plan.aiScore !== null && (
@@ -131,7 +128,7 @@ export default function PlansPage() {
                                         )}
                                         <div className="flex items-center gap-4">
                                             <span className="text-sm text-slate-500">
-                                                {new Date(plan.createdAt).toLocaleDateString()}
+                                                {new Date(plan.created_at).toLocaleDateString()}
                                             </span>
                                             <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-slate-400 transition-colors" />
                                         </div>
@@ -142,6 +139,6 @@ export default function PlansPage() {
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     );
 }

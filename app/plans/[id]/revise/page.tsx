@@ -17,7 +17,6 @@ export default function RevisePlanPage() {
     const [initialFetchLoading, setInitialFetchLoading] = useState(true);
     const [adminNotes, setAdminNotes] = useState<any>(null);
 
-    // Form State
     const [generalThemeId, setGeneralThemeId] = useState<number | undefined>();
     const [specificTheme, setSpecificTheme] = useState('');
     const [title, setTitle] = useState('');
@@ -25,43 +24,37 @@ export default function RevisePlanPage() {
     const [targetMarket, setTargetMarket] = useState('');
     const [appExplanation, setAppExplanation] = useState('');
 
-    // Conditional Form State
     const [sections, setSections] = useState<SectionItem[]>([{ id: '1', name: '', description: '' }]);
     const [screens, setScreens] = useState<SectionItem[]>([{ id: '1', name: '', description: '' }]);
     const [pages, setPages] = useState<SectionItem[]>([{ id: '1', name: '', description: '' }]);
-
     const [refLinks, setRefLinks] = useState<string[]>(['', '', '']);
 
     useEffect(() => {
-        // 1. Fetch available themes
         fetch('/api/themes')
             .then(res => res.json())
-            .then(data => {
-                if (data.success) setThemes(data.themes);
-            });
+            .then(data => { if (data.success) setThemes(data.themes); });
 
-        // 2. Fetch original plan and admin notes
         fetch(`/api/plans/${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.plan) {
            const p = data.plan;
-           setGeneralThemeId(p.generalThemeId);
-           setSpecificTheme(p.specificTheme);
+           setGeneralThemeId(p.general_theme_id);
+           setSpecificTheme(p.specific_theme);
            setTitle(p.title);
-           setProductType(p.productType as any);
-           setTargetMarket(p.targetMarket);
-           setAppExplanation(p.appExplanation);
-           
-           if(p.productType === 'website') setSections(p.sectionsJson || []);
-           if(p.productType === 'mobile') setScreens(p.screensJson || []);
-           if(p.productType === 'dashboard') setPages(p.pagesJson || []);
-           
-           const links = p.refLinksJson || [];
+           setProductType(p.product_type as any);
+           setTargetMarket(p.target_market);
+           setAppExplanation(p.app_explanation);
+
+           if (p.product_type === 'website')   setSections(p.sections_json || []);
+           if (p.product_type === 'mobile')    setScreens(p.screens_json || []);
+           if (p.product_type === 'dashboard') setPages(p.pages_json || []);
+
+           const links = p.ref_links_json || [];
            while (links.length < 3) links.push('');
            setRefLinks(links);
 
-           setAdminNotes(data.adminReview?.fieldNotesJson || null);
+           setAdminNotes(data.adminReview?.field_notes_json || null);
         } else {
            router.push('/plans');
         }
@@ -72,7 +65,6 @@ export default function RevisePlanPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!generalThemeId) return alert('Please select a general theme');
-    
     setLoading(true);
 
     const payload = {
@@ -82,9 +74,9 @@ export default function RevisePlanPage() {
       productType,
       targetMarket,
       appExplanation,
-      sectionsJson: productType === 'website' ? sections.filter(s => s.name) : [],
-      screensJson: productType === 'mobile' ? screens.filter(s => s.name) : [],
-      pagesJson: productType === 'dashboard' ? pages.filter(p => p.name) : [],
+      sectionsJson: productType === 'website'   ? sections.filter(s => s.name) : [],
+      screensJson:  productType === 'mobile'    ? screens.filter(s => s.name)  : [],
+      pagesJson:    productType === 'dashboard' ? pages.filter(p => p.name)    : [],
       refLinksJson: refLinks.filter(l => l.trim() !== '')
     };
 
@@ -94,7 +86,6 @@ export default function RevisePlanPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
       const data = await res.json();
       if (data.success) {
         router.push(`/plans/${data.planId}`);
@@ -102,7 +93,7 @@ export default function RevisePlanPage() {
         alert(data.error || 'Submission failed');
         setLoading(false);
       }
-    } catch (err) {
+    } catch {
       alert('Network error');
       setLoading(false);
     }
@@ -119,7 +110,7 @@ export default function RevisePlanPage() {
   return (
     <div className="min-h-screen bg-[#0F1117] text-white p-8 pb-24">
       <div className="max-w-4xl mx-auto space-y-8">
-        
+
         <div className="flex items-center gap-4">
           <Link href={`/plans/${id}`} className="p-2 -ml-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
             <ChevronLeft className="w-5 h-5" />
@@ -131,17 +122,15 @@ export default function RevisePlanPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
+
             <form onSubmit={handleSubmit} className="col-span-1 lg:col-span-8 space-y-8 bg-slate-900 border border-slate-800 rounded-xl p-6 md:p-8">
-              
+
               <div className="space-y-6">
                 <h2 className="text-lg font-semibold text-teal-400 border-b border-slate-800 pb-2">1. Theme Selection</h2>
-                
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">General Theme (from library) <span className="text-red-400">*</span></label>
                   <ThemePicker themes={themes} onSelect={setGeneralThemeId} selectedId={generalThemeId} />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Specific Theme / Niche Angle <span className="text-red-400">*</span></label>
                   <input
@@ -162,7 +151,7 @@ export default function RevisePlanPage() {
 
               <div className="space-y-6 pt-4">
                 <h2 className="text-lg font-semibold text-teal-400 border-b border-slate-800 pb-2">2. Core Concept</h2>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Shot Title <span className="text-red-400">*</span></label>
                   <input
@@ -217,7 +206,7 @@ export default function RevisePlanPage() {
 
               <div className="space-y-6 pt-4">
                 <h2 className="text-lg font-semibold text-teal-400 border-b border-slate-800 pb-2">3. Structure</h2>
-                
+
                 <div className="flex gap-4 p-1 bg-slate-950 border border-slate-800 rounded-lg">
                   {(['website', 'mobile', 'dashboard'] as const).map(type => (
                     <button
@@ -226,16 +215,14 @@ export default function RevisePlanPage() {
                       onClick={() => setProductType(type)}
                       className={cn(
                         "flex-1 py-2 text-sm font-medium rounded-md capitalize transition-colors",
-                        productType === type 
-                          ? "bg-slate-800 text-white shadow-sm" 
-                          : "text-slate-400 hover:text-white"
+                        productType === type ? "bg-slate-800 text-white shadow-sm" : "text-slate-400 hover:text-white"
                       )}
                     >
                       {type}
                     </button>
                   ))}
                 </div>
-                
+
                 {adminNotes?.product_type && (
                   <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-sm text-amber-200/80 flex gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
@@ -245,9 +232,9 @@ export default function RevisePlanPage() {
 
                 <div className="bg-slate-950/50 p-6 rounded-xl border border-slate-800/50">
                   {productType === 'website' && (
-                    <SectionBuilder 
-                      title="Landing Page Sections" 
-                      itemNameLabel="Section Name (e.g. Hero, Features)" 
+                    <SectionBuilder
+                      title="Landing Page Sections"
+                      itemNameLabel="Section Name (e.g. Hero, Features)"
                       itemDescLabel="What happens in this section?"
                       items={sections}
                       onChange={setSections}
@@ -255,9 +242,9 @@ export default function RevisePlanPage() {
                     />
                   )}
                   {productType === 'mobile' && (
-                    <SectionBuilder 
-                      title="Mobile App Screens" 
-                      itemNameLabel="Screen Name (e.g. Home, Scan)" 
+                    <SectionBuilder
+                      title="Mobile App Screens"
+                      itemNameLabel="Screen Name (e.g. Home, Scan)"
                       itemDescLabel="Key actions / data on this screen"
                       items={screens}
                       onChange={setScreens}
@@ -265,9 +252,9 @@ export default function RevisePlanPage() {
                     />
                   )}
                   {productType === 'dashboard' && (
-                    <SectionBuilder 
-                      title="Dashboard Pages & Flows" 
-                      itemNameLabel="Page Name (e.g. Overview, Settings)" 
+                    <SectionBuilder
+                      title="Dashboard Pages & Flows"
+                      itemNameLabel="Page Name (e.g. Overview, Settings)"
                       itemDescLabel="What data is visualized or managed here?"
                       items={pages}
                       onChange={setPages}
@@ -275,6 +262,7 @@ export default function RevisePlanPage() {
                     />
                   )}
                 </div>
+
                 {adminNotes?.sections_or_screens && (
                   <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md text-sm text-amber-200/80 flex gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
@@ -288,7 +276,7 @@ export default function RevisePlanPage() {
                   <h2 className="text-lg font-semibold text-teal-400">4. Visual References</h2>
                   <span className="text-xs text-slate-500">Optional, max 5</span>
                 </div>
-                
+
                 <div className="space-y-3">
                   {refLinks.map((link, i) => (
                     <input
@@ -351,7 +339,7 @@ export default function RevisePlanPage() {
                   </p>
                </div>
             </div>
-            
+
         </div>
       </div>
     </div>

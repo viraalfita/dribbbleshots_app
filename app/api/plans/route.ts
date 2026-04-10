@@ -1,91 +1,96 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { shotPlans, aiEvaluations, notifications, themeLibrary } from '@/lib/db/schema';
-import { getSession } from '@/lib/auth/session';
+import { getCurrentSession } from '@/lib/auth/session';
 import { evaluatePlan } from '@/lib/ai/evaluate';
-import { eq } from 'drizzle-orm';
+import type { ShotPlan, AiEvaluation, ThemeLibrary } from '@/lib/db/schema';
 
 export async function GET() {
-    const session = await getSession();
-    if (!session.isLoggedIn || session.role !== 'designer') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const session = await getCurrentSession();
+  if (!session || session.role !== 'designer') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-    try {
-        const plans = await db.query.shotPlans.findMany({
-            where: eq(shotPlans.designerId, session.userId!),
-            orderBy: (shotPlans, { desc }) => [desc(shotPlans.createdAt)]
-        });
+  try {
+    const { data: plans, error: plansError } = await db
+      .from('shot_plans')
+      .select('*')
+      .eq('designer_id', session.userId)
+      .order('created_at', { ascending: false });
+    if (plansError) throw plansError;
 
-        const allAiEvals = await db.query.aiEvaluations.findMany();
-        const evalMap = new Map(allAiEvals.map(ev => [ev.planId, ev]));
+    const { data: allAiEvals } = await db
+      .from('ai_evaluations')
+      .select('plan_id, score, label');
+    const evalMap = new Map(
+      ((allAiEvals ?? []) as Pick<AiEvaluation, 'plan_id' | 'score' | 'label'>[]).map(ev => [ev.plan_id, ev])
+    );
 
-        const enrichedPlans = plans.map(plan => ({
-            ...plan,
-            aiScore: evalMap.get(plan.id)?.score || null,
-            aiLabel: evalMap.get(plan.id)?.label || null,
-        }));
+    const enrichedPlans = ((plans ?? []) as ShotPlan[]).map(plan => ({
+      ...plan,
+      aiScore: evalMap.get(plan.id)?.score ?? null,
+      aiLabel: evalMap.get(plan.id)?.label ?? null,
+    }));
 
-        return NextResponse.json({ success: true, plans: enrichedPlans });
-    } catch (error) {
-        console.error('Error fetching plans:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
+    return NextResponse.json({ success: true, plans: enrichedPlans });
+  } catch (error) {
+    console.error('Error fetching plans:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
-    const session = await getSession();
-    if (!session.isLoggedIn || session.role !== 'designer') {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const session = await getCurrentSession();
+  if (!session || session.role !== 'designer') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const planData = await req.json();
+
+    const { data: theme, error: themeError } = await db
+      .from('theme_library')
+      .select('*')
+      .eq('id', planData.generalThemeId)
+      .single();
+    if (themeError || !theme) {
+      return NextResponse.json({ error: 'Invalid general theme ID' }, { status: 400 });
     }
 
-    try {
-        const planData = await req.json();
+    const { data: newPlan, error: insertError } = await db
+      .from('shot_plans')
+      .insert({
+        designer_id: session.userId,
+        parent_plan_id: planData.parentPlanId ?? null,
+        general_theme_id: planData.generalThemeId,
+        specific_theme: planData.specificTheme,
+        title: planData.title,
+        product_type: planData.productType,
+        target_market: planData.targetMarket,
+        app_explanation: planData.appExplanation,
+        sections_json: planData.sectionsJson ?? null,
+        screens_json: planData.screensJson ?? null,
+        pages_json: planData.pagesJson ?? null,
+        ref_links_json: planData.refLinksJson ?? null,
+        status: 'submitted',
+      })
+      .select('id')
+      .single();
+    if (insertError || !newPlan) throw insertError;
 
-        // 1. Fetch general theme context
-        const generalThemeContext = await db.query.themeLibrary.findFirst({
-            where: eq(themeLibrary.id, planData.generalThemeId)
-        });
+    const evaluation = await evaluatePlan(planData, theme as ThemeLibrary);
 
-        if (!generalThemeContext) {
-            return NextResponse.json({ error: 'Invalid general theme ID' }, { status: 400 });
-        }
+    await db.from('ai_evaluations').insert({
+      plan_id: newPlan.id,
+      score: evaluation.score,
+      label: evaluation.label,
+      score_breakdown_json: evaluation.score_breakdown,
+      field_feedback_json: evaluation.field_feedback,
+      overall_verdict: evaluation.overall_verdict,
+    });
 
-        // 2. Insert Plan
-        const [newPlan] = await db.insert(shotPlans).values({
-            designerId: session.userId!,
-            parentPlanId: planData.parentPlanId || null,
-            generalThemeId: planData.generalThemeId,
-            specificTheme: planData.specificTheme,
-            title: planData.title,
-            productType: planData.productType,
-            targetMarket: planData.targetMarket,
-            appExplanation: planData.appExplanation,
-            sectionsJson: planData.sectionsJson,
-            screensJson: planData.screensJson,
-            pagesJson: planData.pagesJson,
-            refLinksJson: planData.refLinksJson,
-            status: 'submitted'
-        }).returning({ id: shotPlans.id });
-
-        // 3. Trigger AI Evaluation
-        const evaluation = await evaluatePlan(planData, generalThemeContext);
-
-        // 4. Save Evaluation
-        await db.insert(aiEvaluations).values({
-            planId: newPlan.id,
-            score: evaluation.score,
-            label: evaluation.label,
-            scoreBreakdownJson: evaluation.score_breakdown,
-            fieldFeedbackJson: evaluation.field_feedback,
-            overallVerdict: evaluation.overall_verdict
-        });
-
-        // 5. Optionally notify admins (not explicitly requested, but good practice)
-
-        return NextResponse.json({ success: true, planId: newPlan.id });
-    } catch (error) {
-        console.error('Error submitting plan:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-    }
+    return NextResponse.json({ success: true, planId: newPlan.id });
+  } catch (error) {
+    console.error('Error submitting plan:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

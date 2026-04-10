@@ -8,7 +8,6 @@ import { ScoreBreakdown } from '@/components/ScoreBreakdown';
 import { ChevronLeft, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Reuse LabelBadge (extract later)
 function LabelBadge({ label, size = 'sm' }: { label: string | null, size?: 'sm' | 'lg' }) {
     if (!label) return null;
     const colors: Record<string, string> = {
@@ -50,7 +49,7 @@ export default function AdminPlanReviewPage() {
       .then(res => res.json())
       .then(d => {
         if (d.success) setData(d);
-        else router.push('/admin'); 
+        else router.push('/admin');
         setLoading(false);
       });
   }, [id, router]);
@@ -82,11 +81,11 @@ export default function AdminPlanReviewPage() {
   if (!data || !data.plan) return null;
 
   const { plan, aiEvaluation, generalTheme } = data;
-  const structData = plan.productType === 'website' ? plan.sectionsJson 
-                   : plan.productType === 'mobile' ? plan.screensJson 
-                   : plan.pagesJson;
 
-  // Has it already been reviewed?
+  const structData = plan.product_type === 'website' ? plan.sections_json
+                   : plan.product_type === 'mobile'  ? plan.screens_json
+                   : plan.pages_json;
+
   const isReviewed = plan.status === 'approved' || plan.status === 'rejected';
 
   const updateNote = (field: keyof typeof notes, val: string) => {
@@ -96,7 +95,7 @@ export default function AdminPlanReviewPage() {
   return (
     <div className="min-h-screen bg-[#0F1117] text-white p-8 pb-32">
       <div className="max-w-6xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-6">
           <div className="flex items-center gap-4">
@@ -108,38 +107,36 @@ export default function AdminPlanReviewPage() {
                 <h1 className="text-2xl font-bold">Review: {plan.title || 'Untitled Plan'}</h1>
                 <StatusBadge status={plan.status} />
               </div>
-              <p className="text-slate-400 text-sm">Submitted {new Date(plan.createdAt).toLocaleString()} by Designer ID: {plan.designerId}</p>
+              <p className="text-slate-400 text-sm">Submitted {new Date(plan.created_at).toLocaleString()} by Designer ID: {plan.designer_id}</p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
+
           {/* Main Content (Left) */}
           <div className="col-span-1 lg:col-span-8 space-y-8">
-            
-            {/* View/Edit Field Blocks */}
             <section className="space-y-6">
-              
-              {/* Context */}
+
+              {/* Core Concept */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 relative">
                  <h3 className="text-lg font-semibold text-teal-400 mb-4 pb-2 border-b border-slate-800">1. Core Concept</h3>
                  <div className="grid grid-cols-2 gap-6">
                     <div>
                       <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">General Theme</h4>
-                      <p className="text-slate-300">{generalTheme?.macroTheme} &gt; {generalTheme?.nicheName}</p>
+                      <p className="text-slate-300">{generalTheme?.macro_theme} &gt; {generalTheme?.niche_name}</p>
                     </div>
                     <div>
                       <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Target Market</h4>
-                      <p className="text-slate-300">{plan.targetMarket}</p>
+                      <p className="text-slate-300">{plan.target_market}</p>
                     </div>
                     <div className="col-span-2">
                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Specific Angle</h4>
-                       <p className="text-white font-medium">{plan.specificTheme}</p>
+                       <p className="text-white font-medium">{plan.specific_theme}</p>
                        {!isReviewed && (
-                         <input 
-                           type="text" 
-                           placeholder="Admin note for specific angle..." 
+                         <input
+                           type="text"
+                           placeholder="Admin note for specific angle..."
                            value={notes.specific_theme}
                            onChange={e => updateNote('specific_theme', e.target.value)}
                            className="mt-3 w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
@@ -148,11 +145,11 @@ export default function AdminPlanReviewPage() {
                     </div>
                     <div className="col-span-2 bg-slate-950 p-4 rounded-lg border border-slate-800">
                       <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">App Explanation</h4>
-                      <p className="text-slate-300 text-sm whitespace-pre-wrap">{plan.appExplanation}</p>
+                      <p className="text-slate-300 text-sm whitespace-pre-wrap">{plan.app_explanation}</p>
                       {!isReviewed && (
-                        <input 
-                          type="text" 
-                          placeholder="Admin note for explanation..." 
+                        <input
+                          type="text"
+                          placeholder="Admin note for explanation..."
                           value={notes.app_explanation}
                           onChange={e => updateNote('app_explanation', e.target.value)}
                           className="mt-3 w-full bg-slate-900 border border-slate-800 rounded-md px-3 py-2 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
@@ -162,10 +159,10 @@ export default function AdminPlanReviewPage() {
                  </div>
               </div>
 
-               {/* Structure */}
+              {/* Structure */}
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
                  <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-4">
-                    <h3 className="text-lg font-semibold text-teal-400">2. Structure ({plan.productType})</h3>
+                    <h3 className="text-lg font-semibold text-teal-400">2. Structure ({plan.product_type})</h3>
                  </div>
                  <div className="space-y-3 mb-4">
                   {structData?.map((item: any, i: number) => (
@@ -179,31 +176,31 @@ export default function AdminPlanReviewPage() {
                   ))}
                  </div>
                  {!isReviewed && (
-                    <input 
-                      type="text" 
-                      placeholder="Admin note for structure..." 
+                    <input
+                      type="text"
+                      placeholder="Admin note for structure..."
                       value={notes.sections_or_screens}
                       onChange={e => updateNote('sections_or_screens', e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
                     />
                   )}
               </div>
-              
+
               {/* Refs */}
-              {plan.refLinksJson && plan.refLinksJson.length > 0 && (
+              {plan.ref_links_json && plan.ref_links_json.length > 0 && (
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
                     <h3 className="text-lg font-semibold text-teal-400 mb-4 pb-2 border-b border-slate-800">3. References</h3>
                     <ul className="space-y-2 mb-4">
-                      {plan.refLinksJson.map((link: string, i: number) => (
+                      {plan.ref_links_json.map((link: string, i: number) => (
                         <li key={i}>
                           <a href={link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline">{link}</a>
                         </li>
                       ))}
                     </ul>
                     {!isReviewed && (
-                        <input 
-                          type="text" 
-                          placeholder="Admin note for links..." 
+                        <input
+                          type="text"
+                          placeholder="Admin note for links..."
                           value={notes.ref_links}
                           onChange={e => updateNote('ref_links', e.target.value)}
                           className="w-full bg-slate-950 border border-slate-800 rounded-md px-3 py-2 text-sm text-slate-300 placeholder:text-slate-600 focus:outline-none focus:border-teal-500"
@@ -217,7 +214,7 @@ export default function AdminPlanReviewPage() {
 
           {/* Sidebar (Right) */}
           <div className="col-span-1 lg:col-span-4 space-y-6 lg:sticky lg:top-8">
-            
+
             {/* AI Evaluation Card */}
             {aiEvaluation ? (
               <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
@@ -231,17 +228,17 @@ export default function AdminPlanReviewPage() {
                       <LabelBadge label={aiEvaluation.label} size="sm" />
                     </div>
                   </div>
-                  <p className="text-sm text-slate-300 italic">"{aiEvaluation.overallVerdict}"</p>
+                  <p className="text-sm text-slate-300 italic">"{aiEvaluation.overall_verdict}"</p>
                 </div>
-                
+
                 <div className="p-5 bg-slate-950/50">
                   <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Score Breakdown</h4>
-                  <ScoreBreakdown scores={aiEvaluation.scoreBreakdownJson} />
+                  <ScoreBreakdown scores={aiEvaluation.score_breakdown_json} />
                 </div>
-                
+
                 <div className="p-5 border-t border-slate-800 space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
                   <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0 bg-slate-900/90 py-2 backdrop-blur-sm">AI Notes</h4>
-                  {Object.entries(aiEvaluation.fieldFeedbackJson).map(([field, msg]: [string, any]) => (
+                  {Object.entries(aiEvaluation.field_feedback_json ?? {}).map(([field, msg]: [string, any]) => (
                     <div key={field} className="bg-slate-800/30 p-2 rounded border border-slate-800/80 text-sm">
                       <span className="font-medium text-teal-400/80 capitalize block mb-0.5">{field.replace(/_/g, ' ')}</span>
                       <span className="text-slate-300 inline-block align-top">{msg}</span>
@@ -254,13 +251,13 @@ export default function AdminPlanReviewPage() {
                  No AI Evaluation available.
               </div>
             )}
-            
+
             {/* Admin Action Panel */}
             {!isReviewed && (
               <div className="bg-slate-900 border-2 border-slate-800 rounded-xl p-6">
                 <h3 className="font-semibold text-white mb-4">Final Decision</h3>
                 <p className="text-sm text-slate-400 mb-6">Review the AI score, add any necessary notes on the left, and make your final call.</p>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => submitReview('rejected')}

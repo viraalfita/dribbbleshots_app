@@ -1,68 +1,61 @@
-import { getSession } from "@/lib/auth/session";
-import { db } from "@/lib/db";
-import { adminReviews, notifications, shotPlans } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { getCurrentSession } from '@/lib/auth/session';
+import type { ShotPlan } from '@/lib/db/schema';
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
-  if (!session.isLoggedIn || session.role !== "admin") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getCurrentSession();
+  if (!session || session.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const resolvedParams = await params;
-  const planId = parseInt(resolvedParams.id, 10);
-  if (isNaN(planId))
-    return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+  const { id } = await params;
+  const planId = parseInt(id, 10);
+  if (isNaN(planId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
 
   try {
     const { decision, fieldNotesJson } = await request.json();
 
-    if (!["approved", "rejected"].includes(decision)) {
-      return NextResponse.json({ error: "Invalid decision" }, { status: 400 });
+    if (!['approved', 'rejected'].includes(decision)) {
+      return NextResponse.json({ error: 'Invalid decision' }, { status: 400 });
     }
 
-    const plan = await db.query.shotPlans.findFirst({
-      where: eq(shotPlans.id, planId),
-    });
+    const { data: plan, error: planError } = await db
+      .from('shot_plans')
+      .select('id, designer_id, title')
+      .eq('id', planId)
+      .single();
+    if (planError || !plan) return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
 
-    if (!plan)
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    const typedPlan = plan as Pick<ShotPlan, 'id' | 'designer_id' | 'title'>;
 
-    // 1. Save Admin Review
-    const [review] = await db
-      .insert(adminReviews)
-      .values({
-        planId,
-        reviewerId: session.userId!,
+    const { data: review, error: reviewError } = await db
+      .from('admin_reviews')
+      .insert({
+        plan_id: planId,
+        reviewer_id: session.userId,
         decision,
-        fieldNotesJson: fieldNotesJson ?? {},
+        field_notes_json: fieldNotesJson ?? {},
       })
-      .returning({ id: adminReviews.id });
+      .select('id')
+      .single();
+    if (reviewError || !review) throw reviewError;
 
-    // 2. Update Plan Status
-    await db
-      .update(shotPlans)
-      .set({ status: decision })
-      .where(eq(shotPlans.id, planId));
+    await db.from('shot_plans').update({ status: decision }).eq('id', planId);
 
-    // 3. Create Notification for Designer
-    await db.insert(notifications).values({
-      userId: plan.designerId,
-      planId: plan.id,
-      message: `Your Dribbble Shot Plan "${plan.title}" has been ${decision}.`,
+    await db.from('notifications').insert({
+      user_id: typedPlan.designer_id,
+      plan_id: typedPlan.id,
+      message: `Your Dribbble Shot Plan "${typedPlan.title}" has been ${decision}.`,
       type: decision,
     });
 
     return NextResponse.json({ success: true, reviewId: review.id });
   } catch (error) {
-    console.error("Error reviewing plan:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    console.error('Error reviewing plan:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

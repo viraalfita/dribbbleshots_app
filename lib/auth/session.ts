@@ -1,31 +1,35 @@
-import { getIronSession } from 'iron-session';
 import { cookies } from 'next/headers';
+import { authClient } from '@/lib/db';
 
-export type SessionData = {
-    userId?: number;
-    username?: string;
-    role?: 'designer' | 'admin';
-    isLoggedIn: boolean;
-};
+export type DribbleRole = 'designer' | 'admin';
 
-export const defaultSession: SessionData = {
-    isLoggedIn: false,
-};
+export interface AppSession {
+  userId: string;  // Supabase Auth UUID
+  email: string;
+  role: DribbleRole;
+}
 
-export const sessionOptions = {
-    password: process.env.SECRET_COOKIE_PASSWORD as string || 'complex_password_at_least_32_characters_long_for_iron_session_here_we_go',
-    cookieName: 'dribbble-shot-plan-session',
-    cookieOptions: {
-        secure: process.env.NODE_ENV === 'production',
-    },
-};
+/**
+ * Validates the Supabase access token from the request cookie and returns
+ * the current session. Returns null if the token is missing or invalid.
+ *
+ * Used in API route handlers. For middleware, JWT expiry is checked locally
+ * without an HTTP call (see middleware.ts).
+ */
+export async function getCurrentSession(): Promise<AppSession | null> {
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('sb-access-token')?.value;
+  const role = cookieStore.get('dribble-role')?.value as DribbleRole | undefined;
 
-export async function getSession() {
-    const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+  if (!accessToken || !role) return null;
 
-    if (!session.isLoggedIn) {
-        session.isLoggedIn = defaultSession.isLoggedIn;
-    }
+  const { data: { user }, error } = await authClient.auth.getUser(accessToken);
 
-    return session;
+  if (error || !user || !user.email) return null;
+
+  return {
+    userId: user.id,
+    email: user.email,
+    role,
+  };
 }

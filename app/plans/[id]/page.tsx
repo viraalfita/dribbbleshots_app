@@ -38,7 +38,7 @@ export default function PlanDetailPage() {
       .then(res => res.json())
       .then(d => {
         if (d.success) setData(d);
-        else router.push('/plans'); // handle not found/auth
+        else router.push('/plans');
         setLoading(false);
       });
   }, [id, router]);
@@ -50,14 +50,14 @@ export default function PlanDetailPage() {
 
   const { plan, aiEvaluation, adminReview, generalTheme } = data;
 
-  const structData = plan.productType === 'website' ? plan.sectionsJson 
-                   : plan.productType === 'mobile' ? plan.screensJson 
-                   : plan.pagesJson;
+  const structData = plan.product_type === 'website' ? plan.sections_json
+                   : plan.product_type === 'mobile'  ? plan.screens_json
+                   : plan.pages_json;
 
   return (
     <div className="min-h-screen bg-[#0F1117] text-white p-8 pb-24">
       <div className="max-w-5xl mx-auto space-y-6">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-6">
           <div className="flex items-center gap-4">
@@ -69,11 +69,11 @@ export default function PlanDetailPage() {
                 <h1 className="text-2xl font-bold">{plan.title || 'Untitled Plan'}</h1>
                 <StatusBadge status={plan.status} />
               </div>
-              <p className="text-slate-400 text-sm">Submitted {new Date(plan.createdAt).toLocaleString()}</p>
+              <p className="text-slate-400 text-sm">Submitted {new Date(plan.created_at).toLocaleString()}</p>
             </div>
           </div>
           {plan.status === 'rejected' && (
-             <Link 
+             <Link
                href={`/plans/${plan.id}/revise`}
                className="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 border border-slate-700 hover:border-slate-600"
              >
@@ -84,33 +84,33 @@ export default function PlanDetailPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
+
           {/* Main Content (Left) */}
           <div className="col-span-1 lg:col-span-2 space-y-8">
-            
+
             {/* Context Section */}
             <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
               <h2 className="text-lg font-semibold text-teal-400 flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-teal-500/10 text-teal-400 flex items-center justify-center text-xs">1</span>
                 Core Concept
               </h2>
-              
+
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-slate-500 mb-1">General Theme</h3>
-                  <p className="text-slate-300">{generalTheme ? `${generalTheme.macroTheme} > ${generalTheme.nicheName}` : 'Unknown'}</p>
+                  <p className="text-slate-300">{generalTheme ? `${generalTheme.macro_theme} > ${generalTheme.niche_name}` : 'Unknown'}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-slate-500 mb-1">Target Market</h3>
-                  <p className="text-slate-300">{plan.targetMarket}</p>
+                  <p className="text-slate-300">{plan.target_market}</p>
                 </div>
                 <div className="col-span-2">
                   <h3 className="text-sm font-medium text-slate-500 mb-1">Specific Angle</h3>
-                  <p className="text-lg font-medium text-white">{plan.specificTheme}</p>
+                  <p className="text-lg font-medium text-white">{plan.specific_theme}</p>
                 </div>
                 <div className="col-span-2 bg-slate-950 p-4 rounded-lg border border-slate-800">
                   <h3 className="text-sm font-medium text-slate-500 mb-2">App Explanation</h3>
-                  <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-wrap">{plan.appExplanation}</p>
+                  <p className="text-slate-300 leading-relaxed text-sm whitespace-pre-wrap">{plan.app_explanation}</p>
                 </div>
               </div>
             </section>
@@ -120,11 +120,11 @@ export default function PlanDetailPage() {
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-teal-400 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-teal-500/10 text-teal-400 flex items-center justify-center text-xs">2</span>
-                  Structure ({plan.productType})
+                  Structure ({plan.product_type})
                 </h2>
-                <span className="text-xs font-medium text-slate-500 bg-slate-800 px-2 py-1 rounded uppercase tracking-wider">{plan.productType}</span>
+                <span className="text-xs font-medium text-slate-500 bg-slate-800 px-2 py-1 rounded uppercase tracking-wider">{plan.product_type}</span>
               </div>
-              
+
               <div className="space-y-3">
                 {structData && structData.length > 0 ? (
                   structData.map((item: any, i: number) => (
@@ -141,16 +141,16 @@ export default function PlanDetailPage() {
                 )}
               </div>
             </section>
-            
+
             {/* References Section */}
-            {plan.refLinksJson && plan.refLinksJson.length > 0 && (
+            {plan.ref_links_json && plan.ref_links_json.length > 0 && (
               <section className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
                 <h2 className="text-lg font-semibold text-teal-400 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-teal-500/10 text-teal-400 flex items-center justify-center text-xs">3</span>
                   Visual References
                 </h2>
                 <ul className="space-y-2">
-                  {plan.refLinksJson.map((link: string, i: number) => (
+                  {plan.ref_links_json.map((link: string, i: number) => (
                     <li key={i}>
                       <a href={link} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-2">
                         <ArrowRight className="w-3 h-3" /> {link}
@@ -165,7 +165,7 @@ export default function PlanDetailPage() {
 
           {/* Sidebar (Right) */}
           <div className="col-span-1 space-y-6">
-            
+
             {/* AI Evaluation Card */}
             {aiEvaluation && (
               <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
@@ -181,18 +181,18 @@ export default function PlanDetailPage() {
                     </div>
                   </div>
                   <p className="text-sm text-slate-300 italic leading-snug relative z-10 border-l-2 border-slate-700 pl-3">
-                    "{aiEvaluation.overallVerdict}"
+                    "{aiEvaluation.overall_verdict}"
                   </p>
                 </div>
-                
+
                 <div className="p-5 bg-slate-950/50">
                   <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Score Breakdown</h4>
-                  <ScoreBreakdown scores={aiEvaluation.scoreBreakdownJson} />
+                  <ScoreBreakdown scores={aiEvaluation.score_breakdown_json} />
                 </div>
-                
+
                 <div className="p-5 border-t border-slate-800 space-y-4">
                   <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">AI Field Notes</h4>
-                  {Object.entries(aiEvaluation.fieldFeedbackJson).map(([field, msg]: [string, any]) => (
+                  {Object.entries(aiEvaluation.field_feedback_json ?? {}).map(([field, msg]: [string, any]) => (
                     <div key={field} className="bg-slate-800/30 p-3 rounded-lg border border-slate-800/80">
                       <span className="text-xs font-medium text-teal-400/80 capitalize block mb-1">{field.replace(/_/g, ' ')}</span>
                       <p className="text-sm text-slate-300">{msg}</p>
@@ -211,16 +211,16 @@ export default function PlanDetailPage() {
                 </div>
                 <div className="p-5 space-y-4">
                   <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Admin Notes</h4>
-                  {Object.entries(adminReview.fieldNotesJson || {}).map(([key, note]: [string, any]) => {
+                  {Object.entries(adminReview.field_notes_json || {}).map(([key, note]: [string, any]) => {
                     if (!note) return null;
                     return (
                       <div key={key} className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-sm">
                         <span className="text-xs font-medium text-slate-500 capitalize block mb-1">{key.replace(/_/g, ' ')}</span>
                         <p className="text-slate-300">{note}</p>
                       </div>
-                    )
+                    );
                   })}
-                  {(!adminReview.fieldNotesJson || Object.values(adminReview.fieldNotesJson).every(v => !v)) && (
+                  {(!adminReview.field_notes_json || Object.values(adminReview.field_notes_json).every(v => !v)) && (
                     <p className="text-sm text-slate-500 italic">No additional admin notes provided.</p>
                   )}
                 </div>

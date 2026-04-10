@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const router = useRouter();
@@ -17,7 +17,7 @@ export default function LoginPage() {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ email, password }),
             });
 
             const data = await res.json();
@@ -31,7 +31,7 @@ export default function LoginPage() {
             } else {
                 setError(data.error || 'Login failed');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred. Please try again.');
         }
     };
@@ -52,13 +52,13 @@ export default function LoginPage() {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Username</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
                         <input
-                            type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
-                            placeholder="Enter username"
+                            placeholder="Enter email"
                             required
                         />
                     </div>

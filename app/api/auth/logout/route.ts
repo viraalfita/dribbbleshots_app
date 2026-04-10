@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth/session';
 
 export async function POST() {
-    const session = await getSession();
-    session.destroy();
-    return NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true });
+  const clear = { path: '/', maxAge: 0 };
+  response.cookies.set('sb-access-token', '', clear);
+  response.cookies.set('sb-refresh-token', '', clear);
+  response.cookies.set('dribble-role', '', clear);
+  return response;
 }

@@ -3,11 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ChevronRight, Filter, Settings, Users } from 'lucide-react';
+import { ChevronRight, Filter, Settings, Users, Key } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LogoutButton } from '@/components/LogoutButton';
 
-// Quick LabelBadge implementation (can be extracted later)
 function LabelBadge({ label }: { label: string | null }) {
     if (!label) return <span className="text-xs text-slate-500 italic">Pending</span>;
 
@@ -25,13 +24,12 @@ function LabelBadge({ label }: { label: string | null }) {
     );
 }
 
-// ... rest of the file ...
 type AdminPlan = {
     id: number;
     title: string;
-    specificTheme: string;
+    specific_theme: string;
     status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected';
-    createdAt: string;
+    created_at: string;
     designerUsername: string;
     aiScore: number | null;
     aiLabel: string | null;
@@ -46,9 +44,7 @@ export default function AdminDashboard() {
         fetch('/api/admin/plans')
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    setPlans(data.plans);
-                }
+                if (data.success) setPlans(data.plans);
                 setLoading(false);
             });
     }, []);
@@ -71,13 +67,19 @@ export default function AdminDashboard() {
                         <p className="text-blue-200/60">Review submitted Dribbble shot plans.</p>
                     </div>
                     <div className="flex gap-4">
-                        {/* Top Navigation for Admin */}
                         <button className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
                             <Users className="w-5 h-5" />
                         </button>
                         <button className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
                             <Settings className="w-5 h-5" />
                         </button>
+                        <Link
+                            href="/admin/api-keys"
+                            className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                            title="API Keys"
+                        >
+                            <Key className="w-5 h-5" />
+                        </Link>
                         <LogoutButton />
                     </div>
                 </div>
@@ -104,7 +106,6 @@ export default function AdminDashboard() {
 
                 {/* Table Area */}
                 <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col">
-
                     <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
                         <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
                             {(['all', 'pending', 'reviewed'] as const).map(f => (
@@ -158,7 +159,7 @@ export default function AdminDashboard() {
                                             <td className="p-4 align-top max-w-sm">
                                                 <Link href={`/admin/plans/${plan.id}`} className="block group-hover:text-teal-400 transition-colors">
                                                     <p className="font-medium text-white mb-1 truncate">{plan.title || 'Untitled'}</p>
-                                                    <p className="text-xs text-slate-400 truncate">{plan.specificTheme}</p>
+                                                    <p className="text-xs text-slate-400 truncate">{plan.specific_theme}</p>
                                                 </Link>
                                             </td>
                                             <td className="p-4 align-top">
@@ -196,9 +197,8 @@ export default function AdminDashboard() {
                             </tbody>
                         </table>
                     </div>
-
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }

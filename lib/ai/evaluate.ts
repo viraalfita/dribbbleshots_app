@@ -78,9 +78,9 @@ export async function evaluatePlan(planData: any, generalThemeContext: any) {
 Please evaluate the following Dribbble Shot Plan submission.
 
 ### Context
-General Theme Chosen from Library: ${generalThemeContext.nicheName} (${generalThemeContext.macroTheme})
-Original Country Fit for Theme: ${generalThemeContext.countryFit.join(', ')}
-Original Buyer Fit for Theme: ${generalThemeContext.buyerFit.join(', ')}
+General Theme Chosen from Library: ${generalThemeContext.niche_name} (${generalThemeContext.macro_theme})
+Original Country Fit for Theme: ${(generalThemeContext.country_fit ?? []).join(', ')}
+Original Buyer Fit for Theme: ${(generalThemeContext.buyer_fit ?? []).join(', ')}
 
 ### Designer Submission
 Specific Theme: ${planData.specificTheme}

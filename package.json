@@ -7,17 +7,11 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "db:studio": "drizzle-kit studio --config=drizzle.config.ts",
-    "db:generate": "node scripts/generate-migration.mjs",
-    "db:migrate": "node scripts/migrate.mjs",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.10.4",
-    "bcryptjs": "^2.4.3",
+    "@supabase/supabase-js": "^2.49.8",
     "clsx": "^2.1.1",
-    "drizzle-orm": "^0.45.1",
-    "iron-session": "^8.0.4",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
     "openai": "^6.27.0",
@@ -27,12 +21,10 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.2.3",
-    "drizzle-kit": "^0.31.9",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "lightningcss": "^1.32.0",

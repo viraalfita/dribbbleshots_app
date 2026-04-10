@@ -1,27 +1,23 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
-import * as schema from "./schema";
+import { createClient } from '@supabase/supabase-js';
 
-type DrizzleDb = ReturnType<typeof drizzle<typeof schema>>;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-let instance: DrizzleDb | undefined;
+const clientOptions = {
+  auth: { persistSession: false, autoRefreshToken: false },
+};
 
-function getDb(): DrizzleDb {
-  if (!instance) {
-    const databaseUrl = process.env.DATABASE_URL;
-    if (!databaseUrl) {
-      throw new Error("DATABASE_URL is required to use the database client.");
-    }
-
-    const sql = neon(databaseUrl);
-    instance = drizzle(sql, { schema });
-  }
-
-  return instance;
-}
-
-export const db = new Proxy({} as DrizzleDb, {
-  get(_, prop: string | symbol) {
-    return getDb()[prop as keyof DrizzleDb];
-  },
+// Service-role client scoped to dribble_shots schema.
+// Use for all dribble_shots table queries in API routes.
+export const db = createClient(url, serviceKey, {
+  ...clientOptions,
+  db: { schema: 'dribble_shots' },
 });
+
+// Service-role client scoped to public schema.
+// Use for queries against public.users_profile and public.project_members.
+export const publicDb = createClient(url, serviceKey, clientOptions);
+
+// Anon-key client for Supabase Auth operations (signIn, signOut, getUser).
+export const authClient = createClient(url, anonKey, clientOptions);

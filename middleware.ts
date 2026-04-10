@@ -1,43 +1,55 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getIronSession } from 'iron-session';
-import { sessionOptions, SessionData } from './lib/auth/session';
+
+/**
+ * Decodes the JWT payload without verifying the signature.
+ * Used only for routing decisions — actual token validation happens in each
+ * API route via authClient.auth.getUser(token).
+ */
+function decodeJwtPayload(token: string): { exp?: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const padded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+}
 
 export async function middleware(req: NextRequest) {
-    const res = NextResponse.next();
-    // We need to pass the request and response to get the session from headers
-    // For middleware, we have to construct it manually because standard cookies() header is read-only here
-    const session = await getIronSession<SessionData>(req, res, sessionOptions);
+  const res = NextResponse.next();
+  const path = req.nextUrl.pathname;
+  const isPublicRoute = path === '/login' || path.startsWith('/api/auth');
 
-    const path = req.nextUrl.pathname;
-    const isPublicRoute = path === '/login' || path.startsWith('/api/auth');
+  const accessToken = req.cookies.get('sb-access-token')?.value;
+  const role = req.cookies.get('dribble-role')?.value;
 
-    if (!session.isLoggedIn && !isPublicRoute) {
-        return NextResponse.redirect(new URL('/login', req.url));
-    }
+  let isLoggedIn = false;
+  if (accessToken) {
+    const payload = decodeJwtPayload(accessToken);
+    isLoggedIn = !!payload?.exp && payload.exp > Date.now() / 1000;
+  }
 
-    if (session.isLoggedIn && path === '/') {
-        // redirect based on role
-        if (session.role === 'admin') {
-            return NextResponse.redirect(new URL('/admin', req.url));
-        } else {
-            return NextResponse.redirect(new URL('/plans', req.url));
-        }
-    }
+  if (!isLoggedIn && !isPublicRoute) {
+    return NextResponse.redirect(new URL('/login', req.url));
+  }
 
-    // Protect /admin routes from designers
-    if (session.isLoggedIn && path.startsWith('/admin') && session.role !== 'admin') {
-        return NextResponse.redirect(new URL('/plans', req.url));
-    }
+  if (isLoggedIn && path === '/') {
+    return NextResponse.redirect(new URL(role === 'admin' ? '/admin' : '/plans', req.url));
+  }
 
-    // Protect /plans routes from admins (optional, but good for separation)
-    if (session.isLoggedIn && path.startsWith('/plans') && session.role !== 'designer') {
-        return NextResponse.redirect(new URL('/admin', req.url));
-    }
+  if (isLoggedIn && path.startsWith('/admin') && role !== 'admin') {
+    return NextResponse.redirect(new URL('/plans', req.url));
+  }
 
-    return res;
+  if (isLoggedIn && path.startsWith('/plans') && role !== 'designer') {
+    return NextResponse.redirect(new URL('/admin', req.url));
+  }
+
+  return res;
 }
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 
 export type ThemeOption = {
     id: number;
-    macroTheme: string;
-    nicheName: string;
+    macro_theme: string;
+    niche_name: string;
 };
 
 export function ThemePicker({
@@ -24,14 +24,13 @@ export function ThemePicker({
 
     const groups = useMemo(() => {
         const filtered = themes.filter(t =>
-            t.nicheName.toLowerCase().includes(search.toLowerCase()) ||
-            t.macroTheme.toLowerCase().includes(search.toLowerCase())
+            t.niche_name.toLowerCase().includes(search.toLowerCase()) ||
+            t.macro_theme.toLowerCase().includes(search.toLowerCase())
         );
 
-        // Group by macroTheme
         return filtered.reduce((acc, theme) => {
-            if (!acc[theme.macroTheme]) acc[theme.macroTheme] = [];
-            acc[theme.macroTheme].push(theme);
+            if (!acc[theme.macro_theme]) acc[theme.macro_theme] = [];
+            acc[theme.macro_theme].push(theme);
             return acc;
         }, {} as Record<string, ThemeOption[]>);
     }, [themes, search]);
@@ -46,7 +45,7 @@ export function ThemePicker({
                 className="w-full flex items-center justify-between bg-slate-950 border border-slate-800 rounded-lg px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
             >
                 <span className={selectedTheme ? 'text-white' : 'text-slate-500'}>
-                    {selectedTheme ?`${selectedTheme.macroTheme} — ${selectedTheme.nicheName}` : 'Select a general theme...'}
+                    {selectedTheme ? `${selectedTheme.macro_theme} — ${selectedTheme.niche_name}` : 'Select a general theme...'}
                 </span>
                 <ChevronDown className="w-5 h-5 text-slate-500" />
             </button>
@@ -92,7 +91,7 @@ export function ThemePicker({
                                                         : "text-slate-300 hover:bg-slate-800"
                                                 )}
                                             >
-                                                {theme.nicheName}
+                                                {theme.niche_name}
                                                 {selectedId === theme.id && <Check className="w-4 h-4" />}
                                             </button>
                                         ))}

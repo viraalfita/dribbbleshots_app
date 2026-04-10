@@ -1,42 +1,59 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import bcrypt from 'bcryptjs';
-import { getSession } from '@/lib/auth/session';
+import { authClient, publicDb } from '@/lib/db';
+
+const COOKIE_BASE = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+};
 
 export async function POST(req: Request) {
-    try {
-        const { username, password } = await req.json();
+  try {
+    const { email, password } = await req.json();
 
-        if (!username || !password) {
-            return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
-        }
-
-        const user = await db.query.users.findFirst({
-            where: eq(users.username, username),
-        });
-
-        if (!user) {
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
-
-        if (!isMatch) {
-            return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-        }
-
-        const session = await getSession();
-        session.userId = user.id;
-        session.username = user.username;
-        session.role = user.role;
-        session.isLoggedIn = true;
-        await session.save();
-
-        return NextResponse.json({ success: true, role: user.role });
-    } catch (error) {
-        console.error('Login error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
+
+    const { data, error } = await authClient.auth.signInWithPassword({ email, password });
+
+    if (error || !data.session) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // Fetch user's role for the dribble_shots project
+    const { data: member } = await publicDb
+      .from('project_members')
+      .select('role')
+      .eq('user_id', data.user.id)
+      .eq('project', 'dribble_shots')
+      .single();
+
+    if (!member) {
+      return NextResponse.json({ error: 'Not authorized for this project' }, { status: 403 });
+    }
+
+    const role = member.role as string;
+    const { access_token, refresh_token, expires_in } = data.session;
+
+    const response = NextResponse.json({ success: true, role });
+    response.cookies.set('sb-access-token', access_token, {
+      ...COOKIE_BASE,
+      maxAge: expires_in ?? 3600,
+    });
+    response.cookies.set('sb-refresh-token', refresh_token, {
+      ...COOKIE_BASE,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    response.cookies.set('dribble-role', role, {
+      ...COOKIE_BASE,
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Login error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
 }

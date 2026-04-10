@@ -1,39 +1,30 @@
-import bcrypt from "bcryptjs";
-import { sql } from "drizzle-orm";
-import { db } from "../lib/db";
-import { themeLibrary, users } from "../lib/db/schema";
-import seedThemes from "./seed-data.json";
+// Seeds theme_library in dribble_shots schema.
+// Users are managed via Supabase Auth dashboard — no user seeding here.
+import 'dotenv/config';
+import { createClient } from '@supabase/supabase-js';
+import seedThemes from './seed-data.json';
+
+const db = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: { persistSession: false, autoRefreshToken: false },
+    db: { schema: 'dribble_shots' },
+  }
+);
 
 async function seed() {
-  console.log("Seeding PostgreSQL database...");
+  console.log('Seeding dribble_shots.theme_library...');
 
-  await db.execute(sql`
-        TRUNCATE TABLE
-            notifications,
-            admin_reviews,
-            ai_evaluations,
-            shot_plans,
-            theme_library,
-            users
-        RESTART IDENTITY CASCADE
-    `);
+  await db.from('theme_library').delete().neq('id', 0);
+  const { error } = await db.from('theme_library').insert(seedThemes);
 
-  const adminHash = await bcrypt.hash("admin123", 10);
-  const designerHash = await bcrypt.hash("designer123", 10);
+  if (error) {
+    console.error('Seed failed:', error);
+    process.exit(1);
+  }
 
-  await db.insert(users).values([
-    { username: "admin", passwordHash: adminHash, role: "admin" },
-    { username: "designer1", passwordHash: designerHash, role: "designer" },
-  ]);
-
-  await db.insert(themeLibrary).values(seedThemes);
-
-  console.log("Seed complete. Default credentials:");
-  console.log("  admin / admin123");
-  console.log("  designer1 / designer123");
+  console.log(`Seeded ${seedThemes.length} themes.`);
 }
 
-seed().catch((error) => {
-  console.error("Seed failed:", error);
-  process.exit(1);
-});
+seed();

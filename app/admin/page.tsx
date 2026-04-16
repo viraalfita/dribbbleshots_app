@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { StatusBadge } from '@/components/StatusBadge';
-import { ChevronRight, Filter, Settings, Users, Key } from 'lucide-react';
+import { ChevronRight, Filter, Settings, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LogoutButton } from '@/components/LogoutButton';
 
@@ -67,19 +67,16 @@ export default function AdminDashboard() {
                         <p className="text-blue-200/60">Review submitted Dribbble shot plans.</p>
                     </div>
                     <div className="flex gap-4">
-                        <button className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
+                        <Link
+                            href="/admin/users"
+                            className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                            title="User Management"
+                        >
                             <Users className="w-5 h-5" />
-                        </button>
+                        </Link>
                         <button className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors">
                             <Settings className="w-5 h-5" />
                         </button>
-                        <Link
-                            href="/admin/api-keys"
-                            className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-                            title="API Keys"
-                        >
-                            <Key className="w-5 h-5" />
-                        </Link>
                         <LogoutButton />
                     </div>
                 </div>
